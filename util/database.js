@@ -26,7 +26,7 @@ const mongodb = require('mongodb');
 const mongoClint = mongodb.MongoClient;
 
 let _db;
-const uri = "mongodb+srv://root:root@cluster0.lb4tnl8.mongodb.net/shop?retryWrites=true&w=majority";
+const uri = ""; // add user mongodb connetion url
 
 const mongoConnect = (callback) => {
     mongoClint.connect(uri)
