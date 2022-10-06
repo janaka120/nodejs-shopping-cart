@@ -39,15 +39,15 @@ exports.postAddProduct = (req, res, next) => {
   // })
 
   // mongo db create new produt
-  const product = new Product(title, price, description, imageUrl, userId);
-  product.save()
-  .then(result => {
-    console.log("postAddProduct result >>", result);
-    res.redirect('/');
-  })
-  .catch(err => {
-    console.log('postAddProduct err >>>', err)
-  });
+  // const product = new Product(title, price, description, imageUrl, userId);
+  // product.save()
+  // .then(result => {
+  //   console.log("postAddProduct result >>", result);
+  //   res.redirect('/');
+  // })
+  // .catch(err => {
+  //   console.log('postAddProduct err >>>', err)
+  // });
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -76,20 +76,20 @@ exports.getEditProduct = (req, res, next) => {
 
 
   // ** This code used mongo db
-  Product.fetchById(prodId)
-  .then((product) => {
-    if (!product) {
-      return res.redirect('/');
-    }
-    res.render('admin/edit-product', {
-      pageTitle: 'Edit Product',
-      path: '/admin/edit-product',
-      editing: editMode,
-      product: product
-    });
-  }).catch((err) => {
-    console.log("update product err >>>", err)
-  });
+  // Product.fetchById(prodId)
+  // .then((product) => {
+  //   if (!product) {
+  //     return res.redirect('/');
+  //   }
+  //   res.render('admin/edit-product', {
+  //     pageTitle: 'Edit Product',
+  //     path: '/admin/edit-product',
+  //     editing: editMode,
+  //     product: product
+  //   });
+  // }).catch((err) => {
+  //   console.log("update product err >>>", err)
+  // });
 };
 
 exports.postEditProduct = (req, res, next) => {
@@ -114,12 +114,12 @@ exports.postEditProduct = (req, res, next) => {
 
 
   // ** This code used mongodb
-  const proObj = new Product(updatedTitle, updatedPrice, updatedDesc, updatedImageUrl);
-  proObj.update(prodId).then((result) => {
-    res.redirect('/admin/products');
-  }).catch((err) => {
-    console.log("update product err >>>", err)
-  });
+  // const proObj = new Product(updatedTitle, updatedPrice, updatedDesc, updatedImageUrl);
+  // proObj.update(prodId).then((result) => {
+  //   res.redirect('/admin/products');
+  // }).catch((err) => {
+  //   console.log("update product err >>>", err)
+  // });
 };
 
 exports.getProducts = (req, res, next) => {
@@ -143,16 +143,18 @@ exports.getProducts = (req, res, next) => {
   // }).catch((err) => {
   //   console.log("err get all products");
   // })
-  Product.fetchAll()
-  .then(products => {
-    res.render('admin/products', {
-      prods: products,
-      pageTitle: 'Admin Products',
-      path: '/admin/products'
-    });
-  }).catch(err => {
-    console.log("admon getProducts err >>>", err);
-  })
+
+  // *** mongodb code base
+  // Product.fetchAll()
+  // .then(products => {
+  //   res.render('admin/products', {
+  //     prods: products,
+  //     pageTitle: 'Admin Products',
+  //     path: '/admin/products'
+  //   });
+  // }).catch(err => {
+  //   console.log("admon getProducts err >>>", err);
+  // })
 };
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -167,10 +169,10 @@ exports.postDeleteProduct = (req, res, next) => {
   // });
 
   // *** mongo Db
-  Product.deleteById(prodId)
-  .then((result) => {
-    res.redirect('/admin/products');
-  }).catch((err) => {
-    console.log("delete product err >>>", err)
-  });
+  // Product.deleteById(prodId)
+  // .then((result) => {
+  //   res.redirect('/admin/products');
+  // }).catch((err) => {
+  //   console.log("delete product err >>>", err)
+  // });
 };

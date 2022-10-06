@@ -1,29 +1,33 @@
 const Product = require('../models/product');
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
-  .then(products => {
-    res.render('shop/product-list', {
-      prods: products,
-      pageTitle: 'All Products',
-      path: '/products'
-    });
-  })
-  .catch(err => {console.log('getProducts err >>', err)});
+  // *** mongodb code base
+  // Product.fetchAll()
+  // .then(products => {
+  //   res.render('shop/product-list', {
+  //     prods: products,
+  //     pageTitle: 'All Products',
+  //     path: '/products'
+  //   });
+  // })
+  // .catch(err => {console.log('getProducts err >>', err)});
 };
 
 exports.getProduct = (req, res, next) => {
   const prodId = req.params.productId;
-  Product.fetchById(prodId).then(product => {
-    console.log("getProduct result >>>", product);
-    res.render('shop/product-detail', {
-      product: product,
-      pageTitle: product.title,
-      path: '/products'
-    });
-  }).catch(err => {
-    console.log("getProduct err >>>", err);
-  })
+
+  // *** mongodb code base
+  // Product.fetchById(prodId).then(product => {
+  //   console.log("getProduct result >>>", product);
+  //   res.render('shop/product-detail', {
+  //     product: product,
+  //     pageTitle: product.title,
+  //     path: '/products'
+  //   });
+  // }).catch(err => {
+  //   console.log("getProduct err >>>", err);
+  // });
+
   // ** Sequelize to create data
   // Product.findByPk(prodId)
   //   .then((product) => {
@@ -49,15 +53,15 @@ exports.getIndex = (req, res, next) => {
   // })
 
   // *** mongodb
-  Product.fetchAll()
-  .then(products => {
-    res.render('shop/index', {
-      prods: products,
-      pageTitle: 'Shop',
-      path: '/'
-    });
-  })
-  .catch(err => {console.log('shop getIndex err >>', err)});
+  // Product.fetchAll()
+  // .then(products => {
+  //   res.render('shop/index', {
+  //     prods: products,
+  //     pageTitle: 'Shop',
+  //     path: '/'
+  //   });
+  // })
+  // .catch(err => {console.log('shop getIndex err >>', err)});
 };
 
 exports.getCart = (req, res, next) => {
@@ -79,17 +83,17 @@ exports.getCart = (req, res, next) => {
   // });
 
   // ** Mongo db to create cart
-  req.user.getCart()
-  .then((products) => {
-    res.render('shop/cart', {
-      path: '/cart',
-      pageTitle: 'Your Cart',
-      products: products
-    });
-  })
-  .catch(err => {
-    console.log("getCart err >>", err)
-  })
+  // req.user.getCart()
+  // .then((products) => {
+  //   res.render('shop/cart', {
+  //     path: '/cart',
+  //     pageTitle: 'Your Cart',
+  //     products: products
+  //   });
+  // })
+  // .catch(err => {
+  //   console.log("getCart err >>", err)
+  // })
 };
 
 exports.postCart = (req, res, next) => {
@@ -126,13 +130,13 @@ exports.postCart = (req, res, next) => {
   // });
 
   // ** Mongo db to create cart
-  Product.fetchById(prodId).then(product => {
-      return req.user.addToCart(product);
-  }).then(result => {
-    res.redirect('/cart');
-  }).catch(err => {
-    console.log("postCart error", err);
-  });
+  // Product.fetchById(prodId).then(product => {
+  //     return req.user.addToCart(product);
+  // }).then(result => {
+  //   res.redirect('/cart');
+  // }).catch(err => {
+  //   console.log("postCart error", err);
+  // });
 };
 
 exports.postCartDeleteProduct = (req, res, next) => {
@@ -156,14 +160,14 @@ exports.postCartDeleteProduct = (req, res, next) => {
   // });
 
   // ** Mongo db to create cart
-  req.user.deleteItemFromCart(prodId)
-  .then(result => {
-    console.log('post Cart Delete Product result >>', result);
-    res.redirect('/cart');
-  }).catch(err => {
-    console.log('post Cart Delete Product err >>', err);
-    res.redirect('/cart');
-  })
+  // req.user.deleteItemFromCart(prodId)
+  // .then(result => {
+  //   console.log('post Cart Delete Product result >>', result);
+  //   res.redirect('/cart');
+  // }).catch(err => {
+  //   console.log('post Cart Delete Product err >>', err);
+  //   res.redirect('/cart');
+  // })
 };
 
 exports.getOrders = (req, res, next) => {
