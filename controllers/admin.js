@@ -13,6 +13,7 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
+  const userId = req.user._id;
   // ** This code use mysql2 to create data from DB
   // const product = new Product(null, title, imageUrl, description, price);
   // product
@@ -23,19 +24,30 @@ exports.postAddProduct = (req, res, next) => {
   //   .catch(err => console.log(err));
 
   // ** Sequelize to create data
-  console.log("req.user.id >>>", req.user.id);
-  Product.create({
-    title: title,
-    imageUrl: imageUrl,
-    price: price,
-    description: description,
-    userId: req.user.id
-  }).then((result) => {
-    console.log("result >>>>", result);
+  // console.log("req.user.id >>>", req.user.id);
+  // Product.create({
+  //   title: title,
+  //   imageUrl: imageUrl,
+  //   price: price,
+  //   description: description,
+  //   userId: req.user.id
+  // }).then((result) => {
+  //   console.log("result >>>>", result);
+  //   res.redirect('/');
+  // }).catch((err) => {
+  //   console.log("Product create err >>>", err);
+  // })
+
+  // mongo db create new produt
+  const product = new Product(title, price, description, imageUrl, userId);
+  product.save()
+  .then(result => {
+    console.log("postAddProduct result >>", result);
     res.redirect('/');
-  }).catch((err) => {
-    console.log("Product create err >>>", err);
   })
+  .catch(err => {
+    console.log('postAddProduct err >>>', err)
+  });
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -44,10 +56,28 @@ exports.getEditProduct = (req, res, next) => {
     return res.redirect('/');
   }
   const prodId = req.params.productId;
-  req.user.getProducts({where: {id: prodId}}) // pick the product created by current login user
-  // Product.findByPk(prodId)
-  .then((products) => {
-    const product = products[0];
+  // ** This code used Sequelize
+  // req.user.getProducts({where: {id: prodId}}) // pick the product created by current login user
+  // // Product.findByPk(prodId)
+  // .then((products) => {
+  //   const product = products[0];
+  //   if (!product) {
+  //     return res.redirect('/');
+  //   }
+  //   res.render('admin/edit-product', {
+  //     pageTitle: 'Edit Product',
+  //     path: '/admin/edit-product',
+  //     editing: editMode,
+  //     product: product
+  //   });
+  // }).catch((err) => {
+  //   console.log("update product err >>>", err)
+  // });
+
+
+  // ** This code used mongo db
+  Product.fetchById(prodId)
+  .then((product) => {
     if (!product) {
       return res.redirect('/');
     }
@@ -69,13 +99,23 @@ exports.postEditProduct = (req, res, next) => {
   const updatedImageUrl = req.body.imageUrl;
   const updatedDesc = req.body.description;
 
-  Product.findByPk(prodId).then((product) => {
-    product.title = updatedTitle
-    product.price = updatedPrice
-    product.imageUrl = updatedImageUrl
-    product.description = updatedDesc
-    return product.save();
-  }).then((result) => {
+  // ** This code used Sequelize
+  // Product.findByPk(prodId).then((product) => {
+  //   product.title = updatedTitle
+  //   product.price = updatedPrice
+  //   product.imageUrl = updatedImageUrl
+  //   product.description = updatedDesc
+  //   return product.save();
+  // }).then((result) => {
+  //   res.redirect('/admin/products');
+  // }).catch((err) => {
+  //   console.log("update product err >>>", err)
+  // });
+
+
+  // ** This code used mongodb
+  const proObj = new Product(updatedTitle, updatedPrice, updatedDesc, updatedImageUrl);
+  proObj.update(prodId).then((result) => {
     res.redirect('/admin/products');
   }).catch((err) => {
     console.log("update product err >>>", err)
@@ -90,24 +130,45 @@ exports.getProducts = (req, res, next) => {
   //     path: '/admin/products'
   //   });
   // });
-  req.user.getProducts()
-  // Product.findAll()
-  .then((products) => {
+  
+  // ** This code used Sequelize
+  // req.user.getProducts()
+  // // Product.findAll()
+  // .then((products) => {
+  //   res.render('admin/products', {
+  //         prods: products,
+  //         pageTitle: 'Admin Products',
+  //         path: '/admin/products'
+  //       });
+  // }).catch((err) => {
+  //   console.log("err get all products");
+  // })
+  Product.fetchAll()
+  .then(products => {
     res.render('admin/products', {
-          prods: products,
-          pageTitle: 'Admin Products',
-          path: '/admin/products'
-        });
-  }).catch((err) => {
-    console.log("err get all products");
+      prods: products,
+      pageTitle: 'Admin Products',
+      path: '/admin/products'
+    });
+  }).catch(err => {
+    console.log("admon getProducts err >>>", err);
   })
 };
 
 exports.postDeleteProduct = (req, res, next) => {
+  // ** This code used Sequelize
   const prodId = req.body.productId;
-  Product.findByPk(prodId).then((product) => {
-    return product.destroy();
-  }).then((result) => {
+  // Product.findByPk(prodId).then((product) => {
+  //   return product.destroy();
+  // }).then((result) => {
+  //   res.redirect('/admin/products');
+  // }).catch((err) => {
+  //   console.log("delete product err >>>", err)
+  // });
+
+  // *** mongo Db
+  Product.deleteById(prodId)
+  .then((result) => {
     res.redirect('/admin/products');
   }).catch((err) => {
     console.log("delete product err >>>", err)
