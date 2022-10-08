@@ -4,7 +4,8 @@ exports.getAddProduct = (req, res, next) => {
   res.render('admin/edit-product', {
     pageTitle: 'Add Product',
     path: '/admin/add-product',
-    editing: false
+    editing: false,
+    isAuthenticated: req.session.isLoggedIn,
   });
 };
 
@@ -13,7 +14,7 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
-  const userId = req.user._id;
+  const userId = req.session.user._id;
   // ** This code use mysql2 to create data from DB
   // const product = new Product(null, title, imageUrl, description, price);
   // product
@@ -48,6 +49,17 @@ exports.postAddProduct = (req, res, next) => {
   // .catch(err => {
   //   console.log('postAddProduct err >>>', err)
   // });
+
+  // mongoose code base
+  const product = new Product({title, price, description, imageUrl, userId});
+  product.save() // save method by default support by mongoose
+  .then(result => {
+    console.log("postAddProduct result >>", result);
+    res.redirect('/');
+  })
+  .catch(err => {
+    console.log('postAddProduct err >>>', err)
+  });
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -90,6 +102,25 @@ exports.getEditProduct = (req, res, next) => {
   // }).catch((err) => {
   //   console.log("update product err >>>", err)
   // });
+
+
+  // ** This code used mongoose db
+  Product.findById(prodId)
+  .then((product) => {
+    if (!product) {
+      return res.redirect('/');
+    }
+    res.render('admin/edit-product', {
+      pageTitle: 'Edit Product',
+      path: '/admin/edit-product',
+      editing: editMode,
+      product: product,
+      isAuthenticated: req.session.isLoggedIn
+      
+    });
+  }).catch((err) => {
+    console.log("update product err >>>", err)
+  });
 };
 
 exports.postEditProduct = (req, res, next) => {
@@ -120,6 +151,21 @@ exports.postEditProduct = (req, res, next) => {
   // }).catch((err) => {
   //   console.log("update product err >>>", err)
   // });
+
+
+  // ** This code used mongoose
+  Product.findById(prodId)
+    .then((product) => {
+      product.title = updatedTitle;
+      product.price = updatedPrice;
+      product.description = updatedDesc;
+      product.imageUrl = updatedImageUrl;
+      return product.save();
+    }).then(result => {
+      res.redirect('/admin/products');
+    }).catch((err) => {
+      console.log("update product err >>>", err)
+    });
 };
 
 exports.getProducts = (req, res, next) => {
@@ -155,6 +201,21 @@ exports.getProducts = (req, res, next) => {
   // }).catch(err => {
   //   console.log("admon getProducts err >>>", err);
   // })
+
+
+  // *** mongoose code base
+  Product.find()
+    // .populate('userId', 'name') // in mongoose can populate to fetch complete User schema
+    .then(products => {
+      res.render('admin/products', {
+        prods: products,
+        pageTitle: 'Admin Products',
+        path: '/admin/products',
+        isAuthenticated: req.session.isLoggedIn,
+      });
+    }).catch(err => {
+      console.log("admon getProducts err >>>", err);
+    })
 };
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -175,4 +236,13 @@ exports.postDeleteProduct = (req, res, next) => {
   // }).catch((err) => {
   //   console.log("delete product err >>>", err)
   // });
+
+
+  // *** mongoose Db
+  Product.findByIdAndRemove(prodId)
+  .then((result) => {
+    res.redirect('/admin/products');
+  }).catch((err) => {
+    console.log("delete product err >>>", err)
+  });
 };

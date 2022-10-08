@@ -1,4 +1,5 @@
 const Product = require('../models/product');
+const Order = require('../models/order');
 
 exports.getProducts = (req, res, next) => {
   // *** mongodb code base
@@ -11,6 +12,18 @@ exports.getProducts = (req, res, next) => {
   //   });
   // })
   // .catch(err => {console.log('getProducts err >>', err)});
+
+  // *** mongoose code base
+  Product.find()
+  .then(products => {
+    res.render('shop/product-list', {
+      prods: products,
+      pageTitle: 'All Products',
+      path: '/products',
+      isAuthenticated: req.session.isLoggedIn,
+    });
+  })
+  .catch(err => {console.log('getProducts err >>', err)});
 };
 
 exports.getProduct = (req, res, next) => {
@@ -38,6 +51,18 @@ exports.getProduct = (req, res, next) => {
   //     });
   //   })
   //   .catch(err => console.log(err));
+
+  // *** mongoose code base
+  Product.findById(prodId) // `findById()` given by mongoose 
+  .then((product) => {
+    res.render('shop/product-detail', {
+      product: product,
+      pageTitle: product.title,
+      path: '/products',
+      isAuthenticated: req.session.isLoggedIn,
+    });
+  })
+  .catch(err => console.log(err));
 };
 
 exports.getIndex = (req, res, next) => {
@@ -62,6 +87,18 @@ exports.getIndex = (req, res, next) => {
   //   });
   // })
   // .catch(err => {console.log('shop getIndex err >>', err)});
+
+  // *** mongoose code base
+  Product.find()
+  .then(products => {
+    res.render('shop/index', {
+      prods: products,
+      pageTitle: 'Shop',
+      path: '/',
+      isAuthenticated: req.session.isLoggedIn,
+    });
+  })
+  .catch(err => {console.log('getProducts err >>', err)});
 };
 
 exports.getCart = (req, res, next) => {
@@ -93,7 +130,24 @@ exports.getCart = (req, res, next) => {
   // })
   // .catch(err => {
   //   console.log("getCart err >>", err)
-  // })
+  // });
+
+
+  // ** Mongoose db to get cart
+  req.user
+    .populate('cart.items.productId')
+    .then((user) => {
+      const products = user.cart.items;
+      res.render('shop/cart', {
+        path: '/cart',
+        pageTitle: 'Your Cart',
+        products: products,
+        isAuthenticated: req.session.isLoggedIn,
+      });
+    })
+    .catch(err => {
+      console.log("getCart err >>", err)
+    })
 };
 
 exports.postCart = (req, res, next) => {
@@ -137,6 +191,16 @@ exports.postCart = (req, res, next) => {
   // }).catch(err => {
   //   console.log("postCart error", err);
   // });
+
+
+  // ** Mongoose db to create cart
+  Product.findById(prodId).then(product => {
+    return req.user.addToCart(product);
+  }).then(result => {
+    res.redirect('/cart');
+  }).catch(err => {
+    console.log("postCart error", err);
+  });
 };
 
 exports.postCartDeleteProduct = (req, res, next) => {
@@ -168,6 +232,17 @@ exports.postCartDeleteProduct = (req, res, next) => {
   //   console.log('post Cart Delete Product err >>', err);
   //   res.redirect('/cart');
   // })
+
+
+  // ** Mongoose db to create cart
+  req.user.removeFromCart(prodId)
+  .then(result => {
+    console.log('post Cart Delete Product result >>', result);
+    res.redirect('/cart');
+  }).catch(err => {
+    console.log('post Cart Delete Product err >>', err);
+    res.redirect('/cart');
+  })
 };
 
 exports.getOrders = (req, res, next) => {
@@ -184,12 +259,26 @@ exports.getOrders = (req, res, next) => {
   // });
 
   // mongo db
-  req.user.getOrders()
+  // req.user.getOrders()
+  // .then(orders => {
+  //   res.render('shop/orders', {
+  //     path: '/orders',
+  //     pageTitle: 'Your Orders',
+  //     orders: orders
+  //   });
+  // }).catch(err => {
+  //   console.log("fetch orders err >>>", err);
+  // });
+
+
+  // mongoose db
+  Order.find({'user.userId': req.session.user._id})
   .then(orders => {
     res.render('shop/orders', {
       path: '/orders',
       pageTitle: 'Your Orders',
-      orders: orders
+      orders: orders,
+      isAuthenticated: req.session.isLoggedIn,
     });
   }).catch(err => {
     console.log("fetch orders err >>>", err);
@@ -199,7 +288,8 @@ exports.getOrders = (req, res, next) => {
 exports.getCheckout = (req, res, next) => {
   res.render('shop/checkout', {
     path: '/checkout',
-    pageTitle: 'Checkout'
+    pageTitle: 'Checkout',
+    isAuthenticated: req.session.isLoggedIn,
   });
 };
 
@@ -225,10 +315,36 @@ exports.postOrder = (req, res, next) => {
   // })
   
   // mongo db
-  req.user.addOrder()
-  .then(result => {
-    res.redirect('/orders');
-  }).catch(err => {
-      console.log('post order err >>>>', err)
-  })
+  // req.user.addOrder()
+  // .then(result => {
+  //   res.redirect('/orders');
+  // }).catch(err => {
+  //     console.log('post order err >>>>', err)
+  // })
+
+  // ** Mongoose db to get cart
+  req.user
+    .populate('cart.items.productId')
+    .then((user) => {
+      const products = user.cart.items.map(item => {
+        return {
+          quantity: item.quantity,
+          product: {...item.productId._doc }
+        }
+      });
+      const order = new Order({products: products, user: {userId: user._id, name: user.name}});
+      return order.save(); // save method by default support by mongoose
+    })
+    .then(result => {
+      console.log("post Order success!");
+      req.user.cart.items = [];
+      return req.user.save();
+    })
+    .then(() => {
+      console.log("user cart update success");
+      res.redirect('/orders');
+    })
+    .catch(err => {
+      console.log("postOrder err >>", err)
+    })
 }
