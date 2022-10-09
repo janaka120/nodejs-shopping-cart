@@ -11,7 +11,7 @@ const errorController = require('./controllers/error');
 const User = require('./models/user');
 const app = express();
 
-const MONGODB_URL = 'mongodb+srv://root:root@cluster0.lb4tnl8.mongodb.net/shop';
+const MONGODB_URL = ''; // mongodb url
 
 var store = new MongoDBStore({
     uri: MONGODB_URL,
