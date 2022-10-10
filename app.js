@@ -5,18 +5,23 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
+const csrf = require('csurf');
+const flash = require('connect-flash');
+
 
 const errorController = require('./controllers/error');
 // const database = require('./util/database'); // used by mongodb
 const User = require('./models/user');
 const app = express();
 
-const MONGODB_URL = ''; // mongodb url
+const MONGODB_URL = 'mongodb+srv://root:root@cluster0.lb4tnl8.mongodb.net/shop'; // mongodb url
 
 var store = new MongoDBStore({
     uri: MONGODB_URL,
     collection: 'sessions'
 });
+
+const csrfProtection = csrf();
 
 // Catch errors
 store.on('error', function(error) {
@@ -42,6 +47,9 @@ app.use(require('express-session')({
     resave: false,
     saveUninitialized: false
   }));
+
+app.use(csrfProtection);
+app.use(flash());
 
 // user attached to every request
 app.use((req, res, next) => {
@@ -74,6 +82,13 @@ app.use((req, res, next) => {
     });
 });
 
+// added isAuthenticated and csrfToken params for every view
+app.use((req, res, next) => {
+    res.locals.isAuthenticated = req.session.isLoggedIn;
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -90,21 +105,6 @@ app.use(errorController.get404);
 // *** use mongoose code base
 mongoose.connect(MONGODB_URL)
 .then(result => {
-    User.findOne().then(user => {
-        if(!user) {
-            const user = new User({
-                name: 'admin',
-                email: 'admin@test.com',
-                cart: {
-                    items: [],
-                }
-            });
-            user.save();
-            console.log("user created !")
-        }
-    }).catch(err => {
-        console.log("create user err >>>", err);
-    })
     app.listen(3000);
     console.log('connected to port 3000');
 }).catch(err => {

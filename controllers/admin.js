@@ -1,11 +1,13 @@
 const Product = require('../models/product');
 
 exports.getAddProduct = (req, res, next) => {
+  if(!req.session.isLoggedIn) {
+    return res.redirect('/login');
+  }
   res.render('admin/edit-product', {
     pageTitle: 'Add Product',
     path: '/admin/add-product',
     editing: false,
-    isAuthenticated: req.session.isLoggedIn,
   });
 };
 
@@ -115,7 +117,6 @@ exports.getEditProduct = (req, res, next) => {
       path: '/admin/edit-product',
       editing: editMode,
       product: product,
-      isAuthenticated: req.session.isLoggedIn
       
     });
   }).catch((err) => {
@@ -156,13 +157,17 @@ exports.postEditProduct = (req, res, next) => {
   // ** This code used mongoose
   Product.findById(prodId)
     .then((product) => {
+      if(req.user._id.toString() !== product.userId.toString()) {
+        return res.redirect('/');
+      }
       product.title = updatedTitle;
       product.price = updatedPrice;
       product.description = updatedDesc;
       product.imageUrl = updatedImageUrl;
-      return product.save();
-    }).then(result => {
-      res.redirect('/admin/products');
+      return product.save()
+      .then(result => {
+        res.redirect('/admin/products');
+      });
     }).catch((err) => {
       console.log("update product err >>>", err)
     });
@@ -204,14 +209,13 @@ exports.getProducts = (req, res, next) => {
 
 
   // *** mongoose code base
-  Product.find()
+  Product.find({userId: req.user._id})
     // .populate('userId', 'name') // in mongoose can populate to fetch complete User schema
     .then(products => {
       res.render('admin/products', {
         prods: products,
         pageTitle: 'Admin Products',
         path: '/admin/products',
-        isAuthenticated: req.session.isLoggedIn,
       });
     }).catch(err => {
       console.log("admon getProducts err >>>", err);
@@ -239,7 +243,7 @@ exports.postDeleteProduct = (req, res, next) => {
 
 
   // *** mongoose Db
-  Product.findByIdAndRemove(prodId)
+  Product.deleteOne({_id: prodId, userId: req.user._id})
   .then((result) => {
     res.redirect('/admin/products');
   }).catch((err) => {
