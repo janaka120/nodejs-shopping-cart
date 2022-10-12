@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
+const { validationResult } = require('express-validator/check');
 
 const User = require('../models/user');
 
@@ -21,7 +22,12 @@ exports.getLogin = (req, res, next) => {
     res.render('auth/login', {
         pageTitle: 'Login',
         path: '/login',
-        errorMessage: message
+        errorMessage: message,
+        oldInput: {
+            email: '',
+            password: '',
+        },
+        validationErrors: [],
       });
 }
 
@@ -29,6 +35,20 @@ exports.postLogin = (req, res, next) => {
      // ** This code used mongoose to retrive data
      const email = req.body.email;
      const password = req.body.password;
+
+     const errors = validationResult(req);
+     if(!errors.isEmpty()) {
+        return res.status(422).render('auth/login', {
+            pageTitle: 'Login',
+            path: '/login',
+            errorMessage: errors.array()[0].msg,
+            oldInput: {
+                email: email,
+                password: password,
+            },
+            validationErrors: errors.array(),
+        })
+    }
      User.findOne({email: email}).then(user => {
         if(user) {
             bcrypt.compare(password, user.password).then(result => {
@@ -57,6 +77,9 @@ exports.postLogin = (req, res, next) => {
         }
     }).catch(err => {
         console.log("error get user >>>", err);
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     });
 
 }
@@ -81,7 +104,13 @@ exports.getSignup = (req, res, next) => {
     res.render('auth/signup', {
         pageTitle: 'Signup',
         path: '/signup',
-        errorMessage: message
+        errorMessage: message,
+        oldInput: {
+            email: '',
+            password: '',
+            confirmPassword: '',
+        },
+        validationErrors: [],
     })
 }
 
@@ -89,38 +118,48 @@ exports.postSignup = (req, res, next) => {
     const email = req.body.email;
     const password = req.body.password;
     const confirmPassword = req.body.confirmPassword;
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        return res.status(422).render('auth/signup', {
+            pageTitle: 'Signup',
+            path: '/signup',
+            errorMessage: errors.array()[0].msg,
+            oldInput: {
+                email: email,
+                password: password,
+                confirmPassword: confirmPassword,
+            },
+            validationErrors: errors.array(),
+        });
+    }
 
-    User.findOne({email: email}).then(user => {
-        if(!user) {
-            return bcrypt.hash(password, 12)
-                .then(hashedPassword => {
-                    const user = new User({email, password: hashedPassword, cart: {items: []}});
-                    return user.save();
-                })
-                .then(result => {
-                    console.log("user created successfully.");
-                    // ** Error: The from address does not match a verified Sender Identity. ** //
-                    // solution ==> https://stackoverflow.com/questions/61426610/does-not-match-a-verified-sender-identity-error-in-golang
-                    // return transporter.sendMail({
-                    //     to: email,
-                    //     from: 'shop@node-complete.com',
-                    //     subject: 'Signup succeeded!',
-                    //     html: '<h1>You successfully signed up!</h1>'
-                    // }).then(result => {
-                    //     res.redirect('/login');
-                    // }).catch(err => {
-                    //     console.log("email send error >>", err)
-                    // })
-                    res.redirect('/login');
-                });
-        }else {
-            req.flash('error', 'E-mail already exists')
-            res.redirect('/signup');
-        }
-    })
-    .catch(err => {
-        console.log("postSignup err >>>>", err);
-    });
+    bcrypt.hash(password, 12)
+        .then(hashedPassword => {
+            const user = new User({email, password: hashedPassword, cart: {items: []}});
+            return user.save();
+        })
+        .then(result => {
+            console.log("user created successfully.");
+            // ** Error: The from address does not match a verified Sender Identity. ** //
+            // solution ==> https://stackoverflow.com/questions/61426610/does-not-match-a-verified-sender-identity-error-in-golang
+            // return transporter.sendMail({
+            //     to: email,
+            //     from: 'shop@node-complete.com',
+            //     subject: 'Signup succeeded!',
+            //     html: '<h1>You successfully signed up!</h1>'
+            // }).then(result => {
+            //     res.redirect('/login');
+            // }).catch(err => {
+            //     console.log("email send error >>", err)
+            // })
+            res.redirect('/login');
+        })
+        .catch(err => {
+            console.log("postSignup err >>>>", err);
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
+        });
 }
 
 exports.getReset = (req, res, next) => {
@@ -167,6 +206,9 @@ exports.postReset = (req, res, next) => {
         })
         .catch(err => {
             console.log('find user err', err);
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
         });
     })
 }
@@ -189,6 +231,9 @@ exports.getNewPassword = (req, res, next) => {
         
     }).catch(err => {
         console.log('token find error >>', err);
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     });
 
 }
@@ -214,5 +259,8 @@ exports.postNewPassword = (req, res, next) => {
                 })
     }).catch(err => {
         console.log("postNewPassword err >>>", err);
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     })
 }

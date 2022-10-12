@@ -14,11 +14,19 @@
             <form class="login-form" method="POST" action="/login">
                 <div class="form-control">
                     <label for="email">E-mail</label>
-                    <input id="email" name="email" type="text" placeholder="uaername" />
+                    <input
+                        id="email"
+                        name="email"
+                        type="text"
+                        class="<%= validationErrors.find(e => e.param === 'email') ? 'invalid' : '' %>"/>
                 </div>
                 <div class="form-control">
                     <label for="title">Password</label>
-                    <input name="password" id="password" type="password" placeholder="password" />
+                    <input
+                        name="password"
+                        id="password"
+                        type="password"
+                        class="<%= validationErrors.find(e => e.param === 'password') ? 'invalid' : '' %>" />
                 </div>
                 <input type="hidden" value="<%= csrfToken %>" name="_csrf"/>
                 <button class="btn" type="submit">Login</button>

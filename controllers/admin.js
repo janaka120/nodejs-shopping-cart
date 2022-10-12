@@ -1,3 +1,4 @@
+const { validationResult } = require('express-validator');
 const Product = require('../models/product');
 
 exports.getAddProduct = (req, res, next) => {
@@ -8,6 +9,15 @@ exports.getAddProduct = (req, res, next) => {
     pageTitle: 'Add Product',
     path: '/admin/add-product',
     editing: false,
+    errorMessage: '',
+    hasErrors: false,
+    product: {
+      title: '',
+      imageUrl: '',
+      price: 0,
+      description: '',
+    },
+    validationErrors: [],
   });
 };
 
@@ -52,6 +62,23 @@ exports.postAddProduct = (req, res, next) => {
   //   console.log('postAddProduct err >>>', err)
   // });
 
+  const errors = validationResult(req);
+  if(!errors.isEmpty()) {
+    return res.status(422).render('admin/edit-product', {
+        pageTitle: 'Add Product',
+        path: '/admin/add-product',
+        editing: false,
+        hasErrors: errors.array().length > 0,
+        errorMessage: errors.array()[0].msg,
+        product: {
+          title: title,
+          imageUrl: imageUrl,
+          price: price,
+          description: description,
+        },
+        validationErrors: errors.array(),
+    })
+  }
   // mongoose code base
   const product = new Product({title, price, description, imageUrl, userId});
   product.save() // save method by default support by mongoose
@@ -60,7 +87,31 @@ exports.postAddProduct = (req, res, next) => {
     res.redirect('/');
   })
   .catch(err => {
-    console.log('postAddProduct err >>>', err)
+    console.log('postAddProduct err >>>', err);
+
+    // *** hable error method 1 - redirect to same page with error msg
+    // return res.status(500).render('admin/edit-product', {
+      //   pageTitle: 'Add Product',
+    //   path: '/admin/add-product',
+    //   editing: false,
+    //   hasErrors: true,
+    //   errorMessage: 'Database operation fail',
+    //   product: {
+    //     title: title,
+    //     imageUrl: imageUrl,
+    //     price: price,
+    //     description: description,
+    //   },
+    //   validationErrors: [],
+    // });
+
+    // *** hable error method 2 - redirect to new page with error msg
+    res.redirect('/500');
+
+    // *** hable error method 3 - pass error object to next()
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error); // if we pass error pbject like this, it'll skip executing other middleeare and just call to error handling middleware
   });
 };
 
@@ -117,10 +168,20 @@ exports.getEditProduct = (req, res, next) => {
       path: '/admin/edit-product',
       editing: editMode,
       product: product,
-      
+      errorMessage: '',
+      oldInput: {
+        title: '',
+        imageUrl: '',
+        price: 0,
+        description: '',
+      },
+      validationErrors: [],
     });
   }).catch((err) => {
-    console.log("update product err >>>", err)
+    console.log("update product err >>>", err);
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error);
   });
 };
 
@@ -153,23 +214,47 @@ exports.postEditProduct = (req, res, next) => {
   //   console.log("update product err >>>", err)
   // });
 
-
+  
+  console.log("update prodId >>", prodId);
   // ** This code used mongoose
   Product.findById(prodId)
     .then((product) => {
       if(req.user._id.toString() !== product.userId.toString()) {
         return res.redirect('/');
       }
-      product.title = updatedTitle;
-      product.price = updatedPrice;
-      product.description = updatedDesc;
-      product.imageUrl = updatedImageUrl;
-      return product.save()
-      .then(result => {
-        res.redirect('/admin/products');
-      });
+      const errors = validationResult(req);
+      if(!errors.isEmpty()) {
+
+        return res.status(422).render('admin/edit-product', {
+            pageTitle: 'Edit Product',
+            path: '/admin/edit-product',
+            editing: true,
+            errorMessage: errors.array()[0].msg,
+            oldInput: {
+              title: updatedTitle,
+              imageUrl: updatedImageUrl,
+              price: updatedPrice,
+              description: updatedDesc,
+            },
+            product: product,
+            validationErrors: errors.array(),
+        })
+      }else {
+        product.title = updatedTitle;
+        product.price = updatedPrice;
+        product.description = updatedDesc;
+        product.imageUrl = updatedImageUrl;
+        console.log('Update successfully.')
+        return product.save()
+        .then(result => {
+          res.redirect('/admin/products');
+        });
+      }
     }).catch((err) => {
-      console.log("update product err >>>", err)
+      console.log("update product err >>>", err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
@@ -219,6 +304,9 @@ exports.getProducts = (req, res, next) => {
       });
     }).catch(err => {
       console.log("admon getProducts err >>>", err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     })
 };
 
@@ -247,6 +335,9 @@ exports.postDeleteProduct = (req, res, next) => {
   .then((result) => {
     res.redirect('/admin/products');
   }).catch((err) => {
-    console.log("delete product err >>>", err)
+    console.log("delete product err >>>", err);
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error);
   });
 };
