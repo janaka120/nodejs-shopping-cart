@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const Product = require('../models/product');
+const fileHelper = require('../util/file');
 
 exports.getAddProduct = (req, res, next) => {
   if(!req.session.isLoggedIn) {
@@ -23,10 +24,12 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
+  // const imageUrl = req.body.imageUrl;
+  const image = req.file; // request for file
   const price = req.body.price;
   const description = req.body.description;
   const userId = req.session.user._id;
+
   // ** This code use mysql2 to create data from DB
   // const product = new Product(null, title, imageUrl, description, price);
   // product
@@ -61,7 +64,23 @@ exports.postAddProduct = (req, res, next) => {
   // .catch(err => {
   //   console.log('postAddProduct err >>>', err)
   // });
-
+  
+  if(!image) {
+    return res.status(422).render('admin/edit-product', {
+      pageTitle: 'Add Product',
+      path: '/admin/ad-product',
+      editing: false,
+      hasErrors: true,
+      product: {
+        title: title,
+        price: price,
+        description: description,
+      },
+      errorMessage: 'Attached file is not an image',
+      validationErrors: []
+    })
+  }
+  const imageUrl = image.path;
   const errors = validationResult(req);
   if(!errors.isEmpty()) {
     return res.status(422).render('admin/edit-product', {
@@ -72,7 +91,6 @@ exports.postAddProduct = (req, res, next) => {
         errorMessage: errors.array()[0].msg,
         product: {
           title: title,
-          imageUrl: imageUrl,
           price: price,
           description: description,
         },
@@ -189,7 +207,8 @@ exports.postEditProduct = (req, res, next) => {
   const prodId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
+  // const updatedImageUrl = req.body.imageUr;
+  const updatedImage = req.file;
   const updatedDesc = req.body.description;
 
   // ** This code used Sequelize
@@ -232,7 +251,6 @@ exports.postEditProduct = (req, res, next) => {
             errorMessage: errors.array()[0].msg,
             oldInput: {
               title: updatedTitle,
-              imageUrl: updatedImageUrl,
               price: updatedPrice,
               description: updatedDesc,
             },
@@ -243,7 +261,10 @@ exports.postEditProduct = (req, res, next) => {
         product.title = updatedTitle;
         product.price = updatedPrice;
         product.description = updatedDesc;
-        product.imageUrl = updatedImageUrl;
+        if(updatedImage) {
+          fileHelper.deleteFile(product.imageUrl);
+          product.imageUrl = updatedImage.path;
+        }
         console.log('Update successfully.')
         return product.save()
         .then(result => {
@@ -313,6 +334,21 @@ exports.getProducts = (req, res, next) => {
 exports.postDeleteProduct = (req, res, next) => {
   // ** This code used Sequelize
   const prodId = req.body.productId;
+  Product.findById(prodId).then(product => {
+    if(!product) {
+      return next(new Error('Product not found'))
+    }
+    fileHelper.deleteFile(product.imageUrl);
+    // *** mongoose Db
+    return Product.deleteOne({_id: prodId, userId: req.user._id})
+  }).then((result) => {
+    res.redirect('/admin/products');
+  }).catch((err) => {
+    console.log("delete product err >>>", err);
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error);
+  });
   // Product.findByPk(prodId).then((product) => {
   //   return product.destroy();
   // }).then((result) => {
@@ -328,16 +364,4 @@ exports.postDeleteProduct = (req, res, next) => {
   // }).catch((err) => {
   //   console.log("delete product err >>>", err)
   // });
-
-
-  // *** mongoose Db
-  Product.deleteOne({_id: prodId, userId: req.user._id})
-  .then((result) => {
-    res.redirect('/admin/products');
-  }).catch((err) => {
-    console.log("delete product err >>>", err);
-    const error = new Error(err);
-    error.httpStatusCode = 500;
-    return next(error);
-  });
 };

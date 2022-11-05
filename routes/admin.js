@@ -21,10 +21,10 @@ router.post('/add-product', [
         .notEmpty()
         .isLength({min: 3, max: 15})
         .trim(),
-    body('imageUrl', 'Please enter valid image url')
-        .isURL()
-        .notEmpty()
-        .trim(),
+    // body('imageUrl', 'Please enter valid image url')
+    //     .isURL()
+    //     .notEmpty()
+    //     .trim(),
     body('price', 'Please enter valid price')
         .isDecimal()
         .notEmpty(),
@@ -43,10 +43,10 @@ router.post('/edit-product', [
         .notEmpty()
         .isLength({min: 3, max: 15})
         .trim(),
-    body('imageUrl', 'Please enter valid image url')
-        .isURL()
-        .notEmpty()
-        .trim(),
+    // body('imageUrl', 'Please enter valid image url')
+    //     .isURL()
+    //     .notEmpty()
+    //     .trim(),
     body('price', 'Please enter valid price')
         .isDecimal()
         .notEmpty(),
