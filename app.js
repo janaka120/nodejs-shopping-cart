@@ -9,12 +9,13 @@ const csrf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
 
+const constants = require('./util/constant');
 const errorController = require('./controllers/error');
 // const database = require('./util/database'); // used by mongodb
 const User = require('./models/user');
 const app = express();
 
-const MONGODB_URL = ''; // mongodb url
+const MONGODB_URL = constants.mongoDbUrl; // mongodb url
 
 var store = new MongoDBStore({
     uri: MONGODB_URL,
